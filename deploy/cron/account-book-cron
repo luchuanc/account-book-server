@@ -1,0 +1,1 @@
+0 3 * * * root /scripts/backup.sh >> /var/log/account-book/backup.log 2>&1

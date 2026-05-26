@@ -1,0 +1,30 @@
+services:
+  account-book:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: account-book-server:latest
+    container_name: account-book-server
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      # 调试时可开启
+      # - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/redis:/var/lib/redis
+      - ./data/uploads:/app/uploads
+      - ./data/logs:/var/log/account-book
+      - ./data/backups:/backups
+      - ./deploy/nginx/cert:/etc/nginx/cert
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api/v1/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

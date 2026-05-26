@@ -1,0 +1,13 @@
+{
+  "name": "account-book-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single-container account-book backend demo",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
