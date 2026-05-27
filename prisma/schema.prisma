@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookRole {
+  owner
+  admin
+  editor
+  viewer
+}
+
+enum CategoryType {
+  expense
+  income
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  rejected
+  expired
+}
+
+enum TransactionType {
+  expense
+  income
+}
+
+model User {
+  id             String       @id @default(uuid())
+  phone          String       @unique
+  passwordHash   String
+  nickname       String
+  avatarUrl      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  ownedBooks     Book[]       @relation("BookOwner")
+  memberships    BookMember[]
+  createdTxns    Transaction[] @relation("TransactionCreator")
+  recordedTxns   Transaction[] @relation("TransactionRecorder")
+  invitations    Invitation[] @relation("InvitationCreator")
+}
+
+model Book {
+  id            String        @id @default(uuid())
+  name          String
+  icon          String?
+  color         String?
+  description   String?
+  ownerUserId   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  owner         User          @relation("BookOwner", fields: [ownerUserId], references: [id])
+  members       BookMember[]
+  categories    Category[]
+  transactions  Transaction[]
+  invitations   Invitation[]
+}
+
+model BookMember {
+  id          String    @id @default(uuid())
+  bookId      String
+  userId      String
+  role        BookRole
+  nickname    String?
+  joinedAt    DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  book        Book      @relation(fields: [bookId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([bookId, userId])
+}
+
+model Category {
+  id          String       @id @default(uuid())
+  bookId      String
+  type        CategoryType
+  name        String
+  icon        String?
+  color       String?
+  isSystem    Boolean      @default(false)
+  isDisabled  Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  book        Book         @relation(fields: [bookId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  bookId          String
+  type            TransactionType
+  amount          Int
+  categoryId      String?
+  title           String?
+  note            String?
+  transactionDate DateTime
+  creatorUserId   String
+  recorderUserId  String
+  paymentAccount  String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  book            Book            @relation(fields: [bookId], references: [id])
+  category        Category?       @relation(fields: [categoryId], references: [id])
+  creator         User            @relation("TransactionCreator", fields: [creatorUserId], references: [id])
+  recorder        User            @relation("TransactionRecorder", fields: [recorderUserId], references: [id])
+
+  @@index([bookId, transactionDate])
+  @@index([bookId, recorderUserId])
+  @@index([bookId, type])
+}
+
+model Invitation {
+  id           String           @id @default(uuid())
+  bookId       String
+  code         String           @unique
+  role         BookRole
+  status       InvitationStatus @default(pending)
+  createdById  String
+  expiresAt    DateTime
+  acceptedById String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  book         Book             @relation(fields: [bookId], references: [id])
+  createdBy    User             @relation("InvitationCreator", fields: [createdById], references: [id])
+}
